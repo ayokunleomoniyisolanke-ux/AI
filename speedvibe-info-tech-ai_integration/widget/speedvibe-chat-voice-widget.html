@@ -1,0 +1,691 @@
+<!-- Speedvibe Info Tech — Chat & Voice (configure SVB_CONFIG below) -->
+<div id="svb-assistant-container">
+    <!-- Voice Button -->
+    <button id="svb-call-button">Talk to Speedvibe</button>
+    <div id="svb-voice-status"></div>
+    <!-- Chat Button -->
+    <button id="svb-chat-toggle">Chat with Speedvibe</button>
+    <!-- Chat Window -->
+    <div class="svb-chat-window">
+        <div class="svb-chat-header"><span>Speedvibe Assistant</span><button class="svb-close-btn">X</button></div>
+        <div class="svb-chat-messages"></div>
+        <div class="svb-chat-input-container">
+            <input type="text" id="svb-chat-input" placeholder="Type your message..." />
+            <button class="svb-send-btn">Send</button>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Scoped styles — Speedvibe widget; does not affect other page elements */
+#svb-assistant-container {
+    all: initial;
+
+    * {
+        all: unset;
+        box-sizing: border-box;
+    }
+}
+
+/* Chat Toggle Button */
+#svb-chat-toggle {
+    position: fixed !important;
+    bottom: 90px !important;
+    right: 20px !important;
+    background: #1565C0 !important;
+    color: white !important;
+    padding: 15px 25px !important;
+    border-radius: 50px !important;
+    border: none !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+    transition: all 0.3s ease !important;
+    z-index: 999999 !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    font-family: Arial, sans-serif !important;
+    line-height: 1 !important;
+    display: inline-block !important;
+    text-align: center !important;
+}
+
+#svb-chat-toggle:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
+    background: #0D47A1 !important;
+}
+
+/* Voice Call Button */
+#svb-call-button {
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    background: #1565C0 !important;
+    color: white !important;
+    border: none !important;
+    padding: 15px 30px !important;
+    font-size: 16px !important;
+    border-radius: 50px !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+    transition: all 0.3s ease !important;
+    z-index: 999999 !important;
+    font-family: Arial, sans-serif !important;
+    line-height: 1 !important;
+    display: inline-block !important;
+    text-align: center !important;
+}
+
+#svb-call-button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
+    background: #0D47A1 !important;
+}
+
+#svb-call-button.svb-active {
+    background: #0A3D91 !important;
+    animation: svb-pulse 1.5s infinite !important;
+}
+
+@keyframes svb-pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* Voice Status */
+#svb-voice-status {
+    position: fixed !important;
+    bottom: 70px !important;
+    right: 20px !important;
+    font-size: 12px !important;
+    color: #666 !important;
+    text-align: center !important;
+    z-index: 999999 !important;
+    font-family: Arial, sans-serif !important;
+    padding: 5px 10px !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Chat Window */
+.svb-chat-window {
+    position: fixed !important;
+    bottom: 150px !important;
+    right: 20px !important;
+    width: 350px !important;
+    max-width: calc(100vw - 40px) !important;
+    height: 500px !important;
+    max-height: calc(100vh - 180px) !important;
+    background: white !important;
+    border-radius: 15px !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2) !important;
+    display: none !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    z-index: 999998 !important;
+    font-family: Arial, sans-serif !important;
+}
+
+.svb-chat-window.svb-open {
+    display: flex !important;
+}
+
+/* Chat Header */
+.svb-chat-header {
+    background: #1565C0 !important;
+    color: white !important;
+    padding: 15px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    font-family: Arial, sans-serif !important;
+}
+
+.svb-close-btn {
+    background: none !important;
+    border: none !important;
+    color: white !important;
+    font-size: 24px !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    width: 30px !important;
+    height: 30px !important;
+    line-height: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: opacity 0.2s ease !important;
+}
+
+.svb-close-btn:hover {
+    opacity: 0.8 !important;
+}
+
+/* Chat Messages Area */
+.svb-chat-messages {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 20px !important;
+    background: #f9f9f9 !important;
+    font-family: Arial, sans-serif !important;
+}
+
+/* Individual Message */
+.svb-message {
+    margin-bottom: 15px !important;
+    display: flex !important;
+    gap: 10px !important;
+    font-family: Arial, sans-serif !important;
+    align-items: flex-start !important;
+}
+
+.svb-message.svb-user {
+    justify-content: flex-end !important;
+}
+
+.svb-message-content {
+    max-width: 70% !important;
+    padding: 12px 16px !important;
+    border-radius: 18px !important;
+    word-wrap: break-word !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    font-family: Arial, sans-serif !important;
+    color: #333 !important;
+}
+
+.svb-message.svb-bot .svb-message-content {
+    background: white !important;
+    border: 1px solid #e0e0e0 !important;
+    color: #333 !important;
+}
+
+.svb-message.svb-user .svb-message-content {
+    background: #1565C0 !important;
+    color: white !important;
+}
+
+/* Chat Input Container */
+.svb-chat-input-container {
+    display: flex !important;
+    padding: 15px !important;
+    border-top: 1px solid #e0e0e0 !important;
+    background: white !important;
+    gap: 10px !important;
+    align-items: center !important;
+}
+
+#svb-chat-input {
+    flex: 1 !important;
+    border: 1px solid #e0e0e0 !important;
+    border-radius: 25px !important;
+    padding: 10px 15px !important;
+    font-size: 14px !important;
+    outline: none !important;
+    font-family: Arial, sans-serif !important;
+    line-height: 1.5 !important;
+    color: #333 !important;
+    background: white !important;
+}
+
+#svb-chat-input:focus {
+    border-color: #1565C0 !important;
+}
+
+.svb-send-btn {
+    background: #1565C0 !important;
+    color: white !important;
+    border: none !important;
+    padding: 10px 20px !important;
+    border-radius: 25px !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    transition: all 0.3s ease !important;
+    font-family: Arial, sans-serif !important;
+    font-weight: 500 !important;
+    line-height: 1 !important;
+}
+
+.svb-send-btn:hover {
+    transform: scale(1.05) !important;
+    background: #0D47A1 !important;
+}
+
+/* Typing Indicator */
+.svb-typing-indicator {
+    display: flex !important;
+    gap: 5px !important;
+    padding: 10px !important;
+    align-items: center !important;
+}
+
+.svb-typing-dot {
+    width: 8px !important;
+    height: 8px !important;
+    background: #999 !important;
+    border-radius: 50% !important;
+    animation: svb-typing 1.4s infinite !important;
+}
+
+.svb-typing-dot:nth-child(2) {
+    animation-delay: 0.2s !important;
+}
+
+.svb-typing-dot:nth-child(3) {
+    animation-delay: 0.4s !important;
+}
+
+@keyframes svb-typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+    }
+    30% {
+        transform: translateY(-10px);
+    }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 480px) {
+    .svb-chat-window {
+        width: calc(100vw - 20px) !important;
+        right: 10px !important;
+        bottom: 140px !important;
+    }
+    #svb-chat-toggle,
+    #svb-call-button {
+        right: 10px !important;
+        padding: 12px 20px !important;
+        font-size: 13px !important;
+    }
+    #svb-call-button {
+        bottom: 10px !important;
+    }
+    #svb-chat-toggle {
+        bottom: 70px !important;
+    }
+}
+</style>
+
+<script>
+(function() {
+    'use strict';
+
+    const isLocalHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+    const apiBase = isLocalHost
+        ? 'http://localhost:8000'
+        : 'https://YOUR-BACKEND.example.com';
+    const wsBase = isLocalHost
+        ? 'ws://localhost:8000'
+        : 'wss://YOUR-BACKEND.example.com';
+
+    const SVB_CONFIG = {
+        chatApiUrl: `${apiBase}/api/v1/speedvibe/chat`,
+        voiceWsUrl: `${wsBase}/api/v1/speedvibe/web-call`
+    };
+
+    const svbChatToggle = document.getElementById('svb-chat-toggle');
+    const svbChatWindow = document.querySelector('.svb-chat-window');
+    const svbCloseBtn = document.querySelector('.svb-close-btn');
+    const svbChatInput = document.getElementById('svb-chat-input');
+    const svbSendBtn = document.querySelector('.svb-send-btn');
+    const svbChatMessages = document.querySelector('.svb-chat-messages');
+    const svbCallButton = document.getElementById('svb-call-button');
+    const svbVoiceStatus = document.getElementById('svb-voice-status');
+
+    let svbIsOpen = false;
+    let svbWs = null;
+    let svbIsActive = false;
+    let svbAudioContext = null;
+    let svbMicStream = null;
+    let svbNextPlayTime = 0;
+    let svbActiveSources = [];          // Track playing audio for interrupt cleanup
+    let svbIsAiSpeaking = false;        // True while AI audio is playing
+    let svbAiSpeakingTimer = null;      // Debounce: stays true 400ms after last chunk
+    let svbVadReady = false;            // Grace period: VAD disabled for 2s at start
+
+    // Chat functionality (UNCHANGED)
+    svbChatToggle.addEventListener('click', function() {
+        svbIsOpen = !svbIsOpen;
+        svbChatWindow.classList.toggle('svb-open', svbIsOpen);
+        if (svbIsOpen) svbChatInput.focus();
+    });
+
+    svbCloseBtn.addEventListener('click', function() {
+        svbIsOpen = false;
+        svbChatWindow.classList.remove('svb-open');
+    });
+
+    function svbAddMessage(type, content) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'svb-message svb-' + type;
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'svb-message-content';
+        contentDiv.textContent = content;
+        messageDiv.appendChild(contentDiv);
+        svbChatMessages.appendChild(messageDiv);
+        svbChatMessages.scrollTop = svbChatMessages.scrollHeight;
+    }
+
+    function svbShowTyping() {
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'svb-message svb-bot svb-typing-indicator';
+        typingDiv.id = 'svb-typing-indicator';
+
+        for (let i = 0; i < 3; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'svb-typing-dot';
+            typingDiv.appendChild(dot);
+        }
+
+        svbChatMessages.appendChild(typingDiv);
+        svbChatMessages.scrollTop = svbChatMessages.scrollHeight;
+    }
+
+    function svbHideTyping() {
+        const typing = document.getElementById('svb-typing-indicator');
+        if (typing) typing.remove();
+    }
+
+    async function svbSendMessage() {
+        const message = svbChatInput.value.trim();
+        if (!message) return;
+
+        svbAddMessage('user', message);
+        svbChatInput.value = '';
+        svbShowTyping();
+
+        try {
+            const response = await fetch(SVB_CONFIG.chatApiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: message
+                })
+            });
+
+            svbHideTyping();
+
+            if (response.ok) {
+                const data = await response.json();
+                svbAddMessage('bot', data.response || data.message || 'I received your message.');
+            } else {
+                svbAddMessage('bot', '❌ Sorry, I encountered an error. Please try again.');
+            }
+        } catch (error) {
+            svbHideTyping();
+            svbAddMessage('bot', '❌ Cannot connect to server. Please try again later.');
+        }
+    }
+
+    svbSendBtn.addEventListener('click', svbSendMessage);
+
+    svbChatInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') svbSendMessage();
+    });
+
+    // ===================================================================
+    // VOICE FUNCTIONALITY (UPDATED for backend sync)
+    // ===================================================================
+
+    // --- Interrupt handler: stops all queued AI audio ---
+    function svbHandleInterrupt() {
+        for (const src of svbActiveSources) {
+            try { src.stop(); } catch (e) {}
+        }
+        svbActiveSources = [];
+        svbNextPlayTime = 0;
+        svbIsAiSpeaking = false;
+        if (svbAiSpeakingTimer) { clearTimeout(svbAiSpeakingTimer); svbAiSpeakingTimer = null; }
+        svbVadReady = true;
+    }
+
+    // --- Audio playback: gapless scheduling with AI-speaking guard ---
+    function svbPlayPCM16Audio(audioData) {
+        if (!svbAudioContext || svbAudioContext.state === 'closed') return;
+
+        // Mark AI as speaking so VAD doesn't trigger from echo
+        svbIsAiSpeaking = true;
+        if (svbAiSpeakingTimer) { clearTimeout(svbAiSpeakingTimer); svbAiSpeakingTimer = null; }
+
+        try {
+            const pcm16 = new Int16Array(audioData);
+            const float32 = new Float32Array(pcm16.length);
+
+            for (let i = 0; i < pcm16.length; i++) {
+                float32[i] = pcm16[i] / 32768.0;
+            }
+
+            const audioBuffer = svbAudioContext.createBuffer(1, float32.length, 24000);
+            audioBuffer.getChannelData(0).set(float32);
+
+            const source = svbAudioContext.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(svbAudioContext.destination);
+
+            // If the queue fell behind, reset playhead
+            if (svbNextPlayTime < svbAudioContext.currentTime) {
+                svbNextPlayTime = svbAudioContext.currentTime + 0.05;
+            }
+
+            source.start(svbNextPlayTime);
+
+            // Track source for interrupt cleanup
+            source.onended = () => { svbActiveSources = svbActiveSources.filter(s => s !== source); };
+            svbActiveSources.push(source);
+
+            svbNextPlayTime += audioBuffer.duration;
+
+            // Re-enable VAD 400ms after this chunk finishes
+            svbAiSpeakingTimer = setTimeout(() => {
+                svbIsAiSpeaking = false;
+                svbAiSpeakingTimer = null;
+            }, Math.round(audioBuffer.duration * 1000) + 400);
+
+        } catch (error) {
+            console.error('Speedvibe: Error playing audio:', error);
+        }
+    }
+
+    // --- VAD: detect user speech, avoid self-interruption from echo ---
+    let svbIsSpeaking = false;
+    let svbSilenceTimer = null;
+    let svbSpeechFrameCount = 0;
+    const SPEECH_THRESHOLD = 1200;
+    const SPEECH_FRAMES_REQUIRED = 4;
+    const SILENCE_DURATION_MS = 1000;
+
+    function svbComputeRMS(pcm16Buffer) {
+        const samples = new Int16Array(pcm16Buffer);
+        let sum = 0;
+        for (let i = 0; i < samples.length; i++) sum += samples[i] * samples[i];
+        return Math.sqrt(sum / samples.length);
+    }
+
+    function svbHandleVAD(pcm16Buffer) {
+        if (!svbWs || svbWs.readyState !== WebSocket.OPEN) return;
+        if (!svbVadReady) return;
+        if (svbIsAiSpeaking) return;
+
+        const rms = svbComputeRMS(pcm16Buffer);
+        if (rms > SPEECH_THRESHOLD) {
+            if (svbSilenceTimer) { clearTimeout(svbSilenceTimer); svbSilenceTimer = null; }
+            svbSpeechFrameCount++;
+            if (!svbIsSpeaking && svbSpeechFrameCount >= SPEECH_FRAMES_REQUIRED) {
+                svbIsSpeaking = true;
+                svbSpeechFrameCount = 0;
+                if (svbActiveSources.length > 0) svbHandleInterrupt();
+                svbWs.send(JSON.stringify({ type: 'USER_ACTIVITY_START' }));
+            }
+        } else {
+            svbSpeechFrameCount = 0;
+            if (svbIsSpeaking && !svbSilenceTimer) {
+                svbSilenceTimer = setTimeout(() => {
+                    svbIsSpeaking = false;
+                    svbSilenceTimer = null;
+                    if (svbWs && svbWs.readyState === WebSocket.OPEN) {
+                        svbWs.send(JSON.stringify({ type: 'USER_ACTIVITY_END' }));
+                    }
+                }, SILENCE_DURATION_MS);
+            }
+        }
+    }
+
+    // --- Start/End call ---
+    svbCallButton.addEventListener('click', async function() {
+        if (!svbIsActive) {
+            try {
+                if (svbAudioContext) {
+                    try { svbAudioContext.close(); } catch (e) {}
+                    svbAudioContext = null;
+                }
+
+                svbMicStream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        channelCount: 1,
+                        sampleRate: 24000,
+                        echoCancellation: true,
+                        noiseSuppression: true
+                    }
+                });
+
+                svbAudioContext = new (window.AudioContext || window.webkitAudioContext)({
+                    sampleRate: 24000
+                });
+
+                if (svbAudioContext.state === 'suspended') await svbAudioContext.resume();
+
+                svbWs = new WebSocket(SVB_CONFIG.voiceWsUrl);
+                svbWs.binaryType = 'arraybuffer';
+
+                svbWs.onopen = async function() {
+                    svbIsActive = true;
+                    svbCallButton.classList.add('svb-active');
+                    svbCallButton.textContent = 'End Call';
+                    svbVoiceStatus.textContent = 'Connected';
+
+                    // 2s grace period so AI greeting plays uninterrupted
+                    svbVadReady = false;
+                    setTimeout(() => { svbVadReady = true; }, 2000);
+
+                    // Tell backend we're ready
+                    svbWs.send(JSON.stringify({ type: 'start' }));
+
+                    // Start mic capture using svbAudioContext (NOT a local alias)
+                    const source = svbAudioContext.createMediaStreamSource(svbMicStream);
+
+                    try {
+                        await svbAudioContext.audioWorklet.addModule('data:text/javascript,' + encodeURIComponent(`
+                            class PCMProcessor extends AudioWorkletProcessor {
+                                process(inputs, outputs) {
+                                    const input = inputs[0];
+                                    if (input.length > 0) {
+                                        const channelData = input[0];
+                                        const pcm16 = new Int16Array(channelData.length);
+                                        for (let i = 0; i < channelData.length; i++) {
+                                            const s = Math.max(-1, Math.min(1, channelData[i]));
+                                            pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                                        }
+                                        this.port.postMessage(pcm16.buffer, [pcm16.buffer]);
+                                    }
+                                    return true;
+                                }
+                            }
+                            registerProcessor('pcm-processor', PCMProcessor);
+                        `));
+
+                        const workletNode = new AudioWorkletNode(svbAudioContext, 'pcm-processor');
+                        source.connect(workletNode);
+                        workletNode.connect(svbAudioContext.destination);
+
+                        workletNode.port.onmessage = function(event) {
+                            if (svbWs.readyState === WebSocket.OPEN) {
+                                svbWs.send(event.data);
+                                svbHandleVAD(event.data);
+                            }
+                        };
+                    } catch (e) {
+                        const processor = svbAudioContext.createScriptProcessor(2048, 1, 1);
+                        source.connect(processor);
+                        processor.connect(svbAudioContext.destination);
+
+                        processor.onaudioprocess = function(event) {
+                            if (svbWs.readyState === WebSocket.OPEN) {
+                                const inputData = event.inputBuffer.getChannelData(0);
+                                const pcm16 = new Int16Array(inputData.length);
+                                for (let i = 0; i < inputData.length; i++) {
+                                    const s = Math.max(-1, Math.min(1, inputData[i]));
+                                    pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                                }
+                                svbWs.send(pcm16.buffer);
+                                svbHandleVAD(pcm16.buffer);
+                            }
+                        };
+                    }
+                };
+
+                svbWs.onmessage = function(event) {
+                    if (event.data instanceof ArrayBuffer) {
+                        svbPlayPCM16Audio(event.data);
+                    } else if (typeof event.data === 'string') {
+                        try {
+                            const msg = JSON.parse(event.data);
+                            if (msg.type === 'interrupt') svbHandleInterrupt();
+                        } catch (e) {}
+                    }
+                };
+
+                svbWs.onerror = function() {
+                    svbVoiceStatus.textContent = '❌ Connection error';
+                };
+
+                svbWs.onclose = function() {
+                    svbEndCall();
+                };
+
+            } catch (error) {
+                alert('Microphone access denied: ' + error.message);
+            }
+        } else {
+            svbEndCall();
+        }
+    });
+
+    function svbEndCall() {
+        svbIsActive = false;
+        svbNextPlayTime = 0;
+        svbActiveSources = [];
+        svbIsAiSpeaking = false;
+        if (svbAiSpeakingTimer) { clearTimeout(svbAiSpeakingTimer); svbAiSpeakingTimer = null; }
+        svbIsSpeaking = false;
+        if (svbSilenceTimer) { clearTimeout(svbSilenceTimer); svbSilenceTimer = null; }
+        svbSpeechFrameCount = 0;
+        svbVadReady = false;
+        svbCallButton.classList.remove('svb-active');
+        svbCallButton.textContent = 'Talk to Speedvibe';
+        svbVoiceStatus.textContent = '';
+
+        if (svbMicStream) {
+            svbMicStream.getTracks().forEach(function(track) {
+                track.stop();
+            });
+            svbMicStream = null;
+        }
+
+        if (svbAudioContext && svbAudioContext.state !== 'closed') {
+            svbAudioContext.close();
+            svbAudioContext = null;
+        }
+
+        if (svbWs) svbWs.close();
+    }
+})();
+</script>
