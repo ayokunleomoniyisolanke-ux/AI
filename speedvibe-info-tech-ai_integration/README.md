@@ -27,13 +27,14 @@ speedvibe-info-tech-ai_integration/
     ├── scraper.py
     ├── rag_chroma.py
     ├── chat.py
+    ├── gemini_voice.py       ← standalone Gemini Live (voice without monolith)
     └── router.py
 ```
 
-**Also wired in the parent repo (not duplicated here):**
+**Optional — parent AISA repo:**
 
-- `app/main.py` — adds `speedvibe-info-tech-ai_integration` to `sys.path` and mounts the router.
-- `app/modules/telephonics/gemini_live.py` — `assistant="speedvibe"` for voice RAG.
+- `app/main.py` — adds this folder to `sys.path` and mounts the router.
+- `app/modules/telephonics/gemini_live.py` — used for `/speedvibe/web-call` when importable; otherwise `gemini_voice.py` runs standalone.
 
 ## What each part does
 
@@ -53,11 +54,11 @@ speedvibe-info-tech-ai_integration/
 | GET | `/speedvibe/stats` | Chroma document count |
 | GET | `/speedvibe/search?query=...` | Debug similarity search |
 | DELETE | `/speedvibe/reset` | Clear the collection |
-| WebSocket | `/speedvibe/web-call` | Gemini Live voice (full backend + `GEMINI_API_KEY`) |
+| WebSocket | `/speedvibe/web-call` | Gemini Live voice (`GEMINI_API_KEY` + `google-genai`; standalone uses `gemini_voice.py`) |
 
 ## Plan (checklist)
 
-1. **Environment** — Copy `.env.example` to `.env`, set `OPENAI_API_KEY`. For voice, set `GEMINI_API_KEY` in the host app (`app/common/config.py`).
+1. **Environment** — Copy `.env.example` to `.env` in this folder. Set `OPENAI_API_KEY`. For voice, set `GEMINI_API_KEY` (Google AI / Gemini API).
 2. **Dependencies** — `pip install -r requirements.txt` (merge into host project as needed).
 3. **Ingest** — `python scripts/ingest_cli.py` or `POST /speedvibe/scrape`.
 4. **Mount router** — See `app/main.py` in the parent repo (path + `include_router`).
@@ -69,7 +70,7 @@ speedvibe-info-tech-ai_integration/
 ```bash
 cd speedvibe-info-tech-ai_integration
 copy .env.example .env
-# edit .env — OPENAI_API_KEY required
+# edit .env — OPENAI_API_KEY; add GEMINI_API_KEY for voice
 
 python -m venv .venv
 .venv\Scripts\activate
@@ -81,7 +82,7 @@ uvicorn app:app --reload --port 8010
 
 Chat: `POST http://localhost:8010/api/v1/speedvibe/chat` with `{"message":"Hello"}`.
 
-**Voice:** Standalone `app.py` has no `gemini_live`; WebSocket returns until this package is used inside the main backend.
+**Voice:** Add `GEMINI_API_KEY` to `.env` and use the widget with `wsBase` pointing at this server (e.g. `ws://localhost:8010`). Standalone uses `gemini_voice.py` automatically.
 
 ## Merge into another FastAPI app
 

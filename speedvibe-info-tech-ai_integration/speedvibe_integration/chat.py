@@ -23,6 +23,15 @@ def _get_rag() -> SpeedvibeChromaRAG:
 
 
 async def handle_speedvibe_chat(chat_input: SpeedvibeChatRequest) -> SpeedvibeChatResponse:
+    api_key = (settings.OPENAI_API_KEY or "").strip()
+    if not api_key:
+        logger.error(
+            "OPENAI_API_KEY is missing or empty; set it in .env next to app.py (see .env.example)."
+        )
+        return SpeedvibeChatResponse(
+            response="Chat is not configured: add OPENAI_API_KEY to the server .env file."
+        )
+
     try:
         rag = _get_rag()
     except Exception as e:
@@ -51,7 +60,7 @@ async def handle_speedvibe_chat(chat_input: SpeedvibeChatRequest) -> SpeedvibeCh
             response = await client.post(
                 "https://api.openai.com/v1/chat/completions",
                 headers={
-                    "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
+                    "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
                 },
                 json={

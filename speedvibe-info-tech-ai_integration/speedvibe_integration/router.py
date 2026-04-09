@@ -60,17 +60,17 @@ async def _scrape_and_store(base_url: str, max_pages: int) -> None:
 @router.websocket("/web-call")
 async def speedvibe_web_call_endpoint(websocket: WebSocket) -> None:
     """
-    Gemini Live voice (same protocol as LMS). Requires full backend with
-    google-genai and GEMINI_API_KEY; when this package runs standalone, import fails
-    and the socket closes until merged into the main app.
+    Gemini Live voice. Uses main backend's handler when `app` is available;
+    otherwise uses standalone `gemini_voice` (same protocol as LMS widget).
     """
     try:
         from app.modules.telephonics.gemini_live import handle_gemini_web_call
+
+        await handle_gemini_web_call(websocket, assistant="speedvibe")
     except ImportError:
-        await websocket.accept()
-        await websocket.close(code=1011)
-        return
-    await handle_gemini_web_call(websocket, assistant="speedvibe")
+        from speedvibe_integration.gemini_voice import handle_speedvibe_gemini_web_call
+
+        await handle_speedvibe_gemini_web_call(websocket)
 
 
 @router.post("/chat", response_model=SpeedvibeChatResponse)

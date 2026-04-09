@@ -10,7 +10,7 @@ This document describes the **architecture**, **workflows**, **configuration**, 
 |------------|------------|
 | **Website RAG** | Crawl same-origin pages from the Speedvibe site, chunk text, embed with OpenAI, store in **ChromaDB** (local files on disk). |
 | **Text chat** | OpenAI Chat Completions (`OPENAI_CHAT_MODEL`, default `gpt-4o-mini`) with retrieved context appended to the system prompt. |
-| **Voice** | **Gemini Live** WebSocket (`/speedvibe/web-call`) — only when this package is mounted inside the **AISA / MacTay-style backend** that already implements `gemini_live.py`. |
+| **Voice** | **Gemini Live** WebSocket (`/speedvibe/web-call`). **Standalone:** `speedvibe_integration/gemini_voice.py` (set `GEMINI_API_KEY`). **Inside AISA:** uses `app.modules.telephonics.gemini_live` when that package exists. |
 
 **Not used for Speedvibe:** Pinecone (Pinecone is used elsewhere in the parent repo for **LMS** only).
 
@@ -36,29 +36,30 @@ speedvibe-info-tech-ai_integration/
     ├── scraper.py            # BFS crawl, same hostname
     ├── rag_chroma.py         # Chroma + OpenAI embeddings
     ├── chat.py               # POST /speedvibe/chat handler
+    ├── gemini_voice.py       # Standalone Gemini Live (voice without monolith)
     ├── schemas.py
     └── router.py             # All HTTP + WebSocket routes
 ```
 
-**Parent repo (AISA backend) — not inside this folder:**
+**Optional parent repo (AISA backend):**
 
 - `app/main.py` — inserts `speedvibe-info-tech-ai_integration` on `sys.path`, mounts `speedvibe_router` at `API_V1_STR` (e.g. `/api/v1`).
-- `app/modules/telephonics/gemini_live.py` — branch `assistant="speedvibe"` uses `SpeedvibeChromaRAG` + `SPEEDVIBE_SYSTEM_INSTRUCTIONS` for voice RAG.
+- `app/modules/telephonics/gemini_live.py` — when importable, `/speedvibe/web-call` uses this handler with `assistant="speedvibe"` (otherwise falls back to `gemini_voice.py`).
 
 ---
 
 ## 3. Environment variables
 
-Copy `.env.example` to `.env` (usually at **project root** when running the full backend; for standalone runs, `.env` next to `app.py` works if cwd is the integration folder).
+Copy `.env.example` to **`.env` inside `speedvibe-info-tech-ai_integration`** — `config.py` loads that path by default (works regardless of process cwd). When this package is embedded in AISA, you can instead rely on the **host** `.env` if you inject the same variables into the environment.
 
 | Variable | Required for | Description |
 |----------|----------------|-------------|
 | `OPENAI_API_KEY` | Chat, embeddings, ingest | OpenAI API key. |
 | `SPEEDVIBE_BASE_URL` | Scrape default | Default `https://speedvibeinfotech-hub.com.ng`. |
-| `CHROMA_PERSIST_DIR` | RAG | Chroma persistence directory (default `./chroma_data_speedvibe`). Use an absolute path or a path under this folder in production. |
+| `CHROMA_PERSIST_DIR` | RAG | Optional. Default is `chroma_data_speedvibe` under this integration folder (see `config.py`). |
 | `OPENAI_CHAT_MODEL` | Chat | Default `gpt-4o-mini`. |
 | `OPENAI_EMBEDDING_MODEL` | Embeddings | Default `text-embedding-3-small`. |
-| `GEMINI_API_KEY` | Voice only | Same as host app `app/common/config.py` — required for `/speedvibe/web-call` when using the full backend. |
+| `GEMINI_API_KEY` | Voice | Required for `/speedvibe/web-call` (standalone **or** full backend). Get a key from Google AI Studio / Gemini API. |
 
 **Security:** Never commit `.env` or real keys. `.gitignore` excludes `.env` and Chroma data dirs.
 
@@ -75,7 +76,7 @@ Base path when mounted: `{API_V1_STR}/speedvibe` (e.g. `/api/v1/speedvibe`).
 | GET | `/stats` | — | Document counts / Chroma stats. |
 | GET | `/search` | `query`, optional `top_k` | Debug search hits. |
 | DELETE | `/reset` | — | Clears the Speedvibe Chroma collection (destructive). |
-| WebSocket | `/web-call` | Gemini Live binary/text protocol | Voice; needs full backend + `GEMINI_API_KEY`. |
+| WebSocket | `/web-call` | Gemini Live binary/text protocol | Voice; needs `GEMINI_API_KEY` and `pip install google-genai`. |
 
 **Example (chat):**
 
@@ -106,7 +107,7 @@ Useful for quick tests without the full monolith.
 ```bash
 cd speedvibe-info-tech-ai_integration
 copy .env.example .env
-# Edit .env — at minimum OPENAI_API_KEY
+# Edit .env — OPENAI_API_KEY; for voice add GEMINI_API_KEY
 
 python -m venv .venv
 .venv\Scripts\activate          # Windows
@@ -117,7 +118,7 @@ uvicorn app:app --reload --port 8010
 ```
 
 - Chat: `POST http://localhost:8010/api/v1/speedvibe/chat`
-- **Voice:** The standalone app does not load `gemini_live`; the WebSocket route will not provide Gemini until this package is used inside the main backend.
+- **Voice:** Set `GEMINI_API_KEY` in `.env`. Widget `wsBase` → `ws://localhost:8010` (or `wss://` in production). The server uses `gemini_voice.py` when `app.modules.telephonics` is not on the path.
 
 ### 5.3 Separate GitHub repo (e.g. `Documents\AI`)
 
@@ -163,9 +164,9 @@ Typical flow when the deliverable is **only** this folder in its own repository:
 | 401 / errors from OpenAI | `OPENAI_API_KEY` set and valid; billing enabled. |
 | Empty or generic answers | Run ingest; check `GET /stats` > 0; verify `SPEEDVIBE_BASE_URL` and crawl reach real HTML. |
 | Chroma permission errors | Writable path for `CHROMA_PERSIST_DIR`; disk space. |
-| Voice never connects | `GEMINI_API_KEY` on host; WebSocket URL uses `wss://` on HTTPS sites; firewall allows WS. |
+| Voice never connects | Set `GEMINI_API_KEY`; `pip install google-genai`; WebSocket URL uses `wss://` on HTTPS pages; mic permission in browser. |
+| `google-genai` errors | Match package version with [Google’s install docs](https://ai.google.dev/); check API key restrictions. |
 | `ModuleNotFoundError: speedvibe_integration` | Host must add `speedvibe-info-tech-ai_integration` parent path to `sys.path` before import (see `app/main.py`). |
-| Import error for `gemini_live` in standalone | Expected — voice needs full backend. |
 
 ---
 
