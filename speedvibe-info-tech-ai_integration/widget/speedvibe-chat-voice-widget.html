@@ -318,12 +318,9 @@
     'use strict';
 
     const isLocalHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-    const apiBase = isLocalHost
-        ? 'http://localhost:8000'
-        : 'https://YOUR-BACKEND.example.com';
-    const wsBase = isLocalHost
-        ? 'ws://localhost:8000'
-        : 'wss://YOUR-BACKEND.example.com';
+    const productionOrigin = 'https://speedvibe-api-production.up.railway.app';
+    const apiBase = isLocalHost ? 'http://localhost:8000' : productionOrigin;
+    const wsBase = isLocalHost ? 'ws://localhost:8000' : productionOrigin.replace(/^https/, 'wss');
 
     const SVB_CONFIG = {
         chatApiUrl: `${apiBase}/api/v1/speedvibe/chat`,

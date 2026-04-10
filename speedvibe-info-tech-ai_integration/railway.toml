@@ -1,0 +1,7 @@
+# Railway deploy config — https://docs.railway.app/guides/config-as-code
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "uvicorn app:app --host 0.0.0.0 --port $PORT"
+restartPolicyType = "ON_FAILURE"
